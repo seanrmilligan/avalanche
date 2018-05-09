@@ -50,7 +50,7 @@ def print_table(debts, extra_payments):
 	
 	# each iteration is a month
 	while not zero_balance:
-		zero_balance = all(debt['amount'] is 0 for debt in debts)
+		zero_balance = all(debt['amount'] == 0 for debt in debts)
 
 		# show monthly balance before any interest or payments
 		print_row((debt['amount'] for debt in debts), 'starting amount')
@@ -60,51 +60,52 @@ def print_table(debts, extra_payments):
 		print_row(interest, 'interest')
 
 		# add interest to the debt (this assumes monthly compounding)
-		apply_interest(debts, interest)
+		apply(debts, interest)
 		print_row((debt['amount'] for debt in debts), 'new amount')
 
 		# show minimum payments, then take them out of remaining debt
-		print_row((min(debt['payment'], debt['amount']) for debt in debts), 'minimum payments')
+		minimum_payments = [-min(debt['payment'], debt['amount']) for debt in debts]
+		print_row(minimum_payments, 'minimum payments')
 		unused_minimum_payments = make_minimum_payments(debts)
 
 		excess = calculate_excess(debts, unused_minimum_payments + extra_payments)
 		print_row(excess, 'excess payments')
 
 		# reduce highest rate debts first (debts were sorted by rate)
-		make_excess_payments(debts, unused_minimum_payments + extra_payments)
+		apply(debts, excess)
 
 		print_row((debt['amount'] for debt in debts), 'ending amount')
 		print()
 
 def print_colnames(debts):
 	for debt in debts:
-		print('{:>15}'.format(debt['name']), end=' | ')
+		print('{:>12}'.format(debt['name']), end=' | ')
 	print('\n')
 
 def print_row(values, end):
 	for value in values:
-		print('{:15.2f}'.format(value), end=' | ')
+		print('{:12.2f}'.format(value), end=' | ')
 	print(end)
 
 def calculate_interest(debts):
 	return [debt['amount'] * (debt['rate'] / 12) if debt['amount'] > 0 else 0 for debt in debts]
 
-def apply_interest(debts, interest):
+def apply(debts, amount):
 	for i in range(len(debts)):
-		debts[i]['amount'] = debts[i]['amount'] + interest[i]
+		debts[i]['amount'] = debts[i]['amount'] + amount[i]
 
 def calculate_excess(debts, excess):
 	excess_payments = []
 	for debt in debts:
 		if debt['amount'] > 0 and excess > 0:
 			if excess > debt['amount']:
-				excess_payments.append(debt['amount'])
+				excess_payments.append(-debt['amount'])
 				excess = excess - debt['amount']
 			else:
-				excess_payments.append(excess)
+				excess_payments.append(-excess)
 				excess = 0
 		else:
-			excess_payments.append(0.0)
+			excess_payments.append(-0.0)
 
 	return excess_payments
 
@@ -127,16 +128,6 @@ def make_minimum_payments(debts):
 			excess = excess + debt['payment']
 
 	return excess
-
-def make_excess_payments(debts, excess):
-	for debt in debts:
-		if debt['amount'] > 0 and excess > 0:
-			if excess > debt['amount']:
-				excess = excess - debt['amount']
-				debt['amount'] = 0
-			else:
-				debt['amount'] = debt['amount'] - excess
-				break
 
 def load_debts(file_name):
 	debts = None
