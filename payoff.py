@@ -121,26 +121,6 @@ def apply(debts, amount):
 	for i in range(len(debts)):
 		debts[i]['amount'] = debts[i]['amount'] + amount[i]
 
-def make_minimum_payments(debts):
-	excess = 0
-
-	for debt in debts:
-		if debt['amount'] > 0:
-			# see if we're about to pay off the debt
-			if debt['payment'] > debt['amount']:
-				# track the excess so that we can apply it to another debt
-				excess = excess + (debt['payment'] - debt['amount'])
-				# wipe out the debt
-				debt['amount'] = 0
-			else:
-				# apply a regular payment
-				debt['amount'] = debt['amount'] - debt['payment']
-		else:
-			# take the payment and set it aside to apply to another debt
-			excess = excess + debt['payment']
-
-	return excess
-
 def load_debts(file_name):
 	debts = None
 	with open(file_name) as debt_file:
